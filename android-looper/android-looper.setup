@@ -1,0 +1,13 @@
+(if (host-extension)
+    (begin
+      (compile -t android-looper.scm -j android-looper)
+      (compile -s android-looper.import.scm))
+    (begin
+      (compile -s -landroid android-looper.scm -j android-looper)
+      (compile -s -landroid android-looper.import.scm)))
+
+(install-extension 'android-looper
+  (if (host-extension)
+      '("android-looper.import.so")
+      '("android-looper.so" "android-looper.import.so"))
+  '((version "0.1")))
