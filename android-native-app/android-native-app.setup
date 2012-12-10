@@ -1,0 +1,13 @@
+(if (host-extension)
+    (begin
+      (compile -t android-native-app.scm -j android-native-app)
+      (compile -s android-native-app.import.scm))
+    (begin
+      (compile -s -llog -landroid android-native-app.scm -j android-native-app)
+      (compile -s -llog -landroid android-native-app.import.scm)))
+
+(install-extension 'android-native-app
+  (if (host-extension)
+      '("android-native-app.import.so")
+      '("android-native-app.so" "android-native-app.import.so"))
+  '((version "0.1")))
