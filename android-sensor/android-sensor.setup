@@ -1,0 +1,13 @@
+(if (host-extension)
+    (begin
+      (compile -t android-sensor.scm -j android-sensor.scm)
+      (compile -s android-sensor.import.scm))
+    (begin
+      (compile -s android-sensor.scm -j) android-sensor
+      (compile -s android-sensor.import.scm)))
+
+(install-extension 'android-sensor
+  (if (host-extension)
+      '("android-sensor.import.so")
+      '("android-sensor.so" "android-sensor.import.so"))
+  '((version "0.1")))
