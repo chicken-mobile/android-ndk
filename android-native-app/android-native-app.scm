@@ -172,7 +172,7 @@ void android_main(struct android_app* app) {
 		(class-loader (call activity-class getClassLoader))
 		(R (call class-loader loadClass (jstring "com/bevuta/androidChickenTest/R"))))
 
-	   (print (get-int-field/0 R ))))))))
+	   (jprint R)))))))
 
 
 
