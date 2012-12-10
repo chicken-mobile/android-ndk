@@ -1,0 +1,13 @@
+(if (host-extension)
+    (begin
+      (compile -t android-activity.scm -j android-activity.scm)
+      (compile -s android-activity.import.scm))
+    (begin
+      (compile -s -landroid android-activity.scm -j android-activity)
+      (compile -s -landroid android-activity.import.scm)))
+
+(install-extension 'android-activity
+  (if (host-extension)
+      '("android-activity.import.so")
+      '("android-activity.so" "android-activity.import.so"))
+  '((version "0.1")))

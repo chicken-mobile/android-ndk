@@ -1,0 +1,4 @@
+((license "BSD")
+ (category os)
+ (author "bevuta IT GmbH (Patrick Brauer)")
+ (synopsis "Android Activity Bindings"))
