@@ -1,0 +1,13 @@
+(if (host-extension)
+    (begin
+      (compile -t android-log.scm -j android-log.scm)
+      (compile -s android-log.import.scm))
+    (begin
+      (compile -s -llog android-log.scm -j android-log)
+      (compile -s -llog android-log.import.scm)))
+
+(install-extension 'android-log
+  (if (host-extension)
+      '("android-log.import.so")
+      '("android-log.so" "android-log.import.so"))
+  '((version "0.1")))
