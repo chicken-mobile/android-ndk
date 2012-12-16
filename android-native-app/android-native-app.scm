@@ -162,17 +162,17 @@ void android_main(struct android_app* app) {
 (define native-app
   (make-parameter '()))
 
+(define init-window-callback
+  (make-parameter #f))
+
+
+(load "/data/data/com.bevuta.androidChickenTest/lib/libmain.so")
 (define-external (handle_command ((c-pointer "struct android_app") app) (app-cmd cmd)) void
   (print "event received: " cmd)
   (case cmd
-    ((init-window)
-     (with-jvm-thread (activity-jvm (native-app-activity app))
-       (lambda ()
-	 (let* ((activity-class (get-object-class (activity-object (native-app-activity app))))
-		(class-loader (call activity-class getClassLoader))
-		(R (call class-loader loadClass (jstring "com/bevuta/androidChickenTest/R"))))
-
-	   (jprint R)))))))
+    ((init-window) 
+     (if (init-window-callback)
+	 ((init-window-callback) app)))))
 
 
 

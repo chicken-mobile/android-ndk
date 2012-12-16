@@ -1,0 +1,77 @@
+* es gibt 3 möglichkeiten den chicken prozess zu starten
+** Activity in java implementieren
+*** Java
+    - libchicken laden
+    - Lifecycle implemtieren
+    - callbacks stubs für chicken
+*** Chicken
+    - JNI_OnLoad implementieren
+      - call chicken_run
+    - callbacks implementieren
+      - laufen immer in ui thread
+        - blockt bei jeden call das interface
+        - kann nicht arbeiten aufgerufen zu werden
+	  - langlebige tasks sind quasi unmöglich
+	  - eine möglichkeit wäre vllt android IPC zu benutzen
+	    - sieht sehr aufwendig aus
+	    - service implementieren der von der ui getriggert werden kann
+** Activity in java implementieren und chicken in einem java thread starten
+*** Java
+    - thread für chicken starten
+      - libchicken laden
+    - Lifecycle implementieren
+    - android.Handler implementieren für ui kram
+      - ui darf nur vom ui thread geändert werden
+      - chicken muss immer vom gleichen thread gecalled werden
+      - der handler implementiert reflection methoden die dann im ui thread ausgeführt werden
+        - ist es möglich den rückgabewert ohne thread wechsel zu bekommen ?
+    - android.Handler implementieren für chicken
+      - chicken wird in eigenem java thread gestartet
+      - handler wird für diesen thread initialisiert
+    - handler implementieren
+      - interfaces für Listener die events vom ui thread triggern
+	- ist ein rückgabe wert der reflction invocation erreichbar ?
+*** Chicken
+    - JNI_OnLoad implementieren
+      - call chicken_run
+    - callbacks für den chicken Handler
+    - interface für den ui thread handler (ui reflection)
+
+** Activity in chicken implementieren und in einem eigenem thread starten (ohne wäre auch möglich)
+*** Java
+    - android.Handler implementieren für ui kram
+      - ui darf nur vom ui thread geändert werden
+      - chicken muss immer vom gleichen thread gecalled werden
+      - der handler implementiert reflection methoden die dann im ui thread ausgeführt werden
+        - ist es möglich den rückgabewert ohne thread wechsel zu bekommen ?
+    - handler implementieren (muss im chicken thread gestartet werden) jvm pthread kompatibel?
+      - interfaces für Listener die events vom ui thread triggern
+	- ist ein rückgabe wert der reflction invocation erreichbar ?
+*** Chicken
+    - native_app_glue
+      - implementiert einen Activity Lifcycle
+      - wird vom ui thread gecalled
+      - startet einen thread für die eigentliche implementierung der Activity
+	- die android runtime dispatched calls an native_app_glue
+	  - native_app_glue sendet ein cmd an einem thread durch eine pipe
+	    - der thread arbeitet einen loop ab un polled dabei events (bisschen so wie bei windows)
+    - android_main implementieren (neuer thread)
+      - call chicken_run
+    - Lifecycle implementieren
+      - handle_cmd
+	- bekommt die events als int
+	  - argument ist das aktive android_app struct
+	    - hierin befindet sich zb:
+	      - die jvm instanz
+		- die jni-env ist nicht thread übergreifend
+		  - jni-env bekommt man durch jvm-attach-current-thread
+		  - bedeutet wahrscheinlich auch das man immer globale referenzen brauchen wird
+		  - 
+	      - die instanz der activity als java object (NativeActivity)
+	      - der thread
+	      - andere nützlicher foo
+    - callbacks für den chicken Handler
+      - vielleicht brauch man was eigens für das message passing
+	- könnte ähnlich aussehen wie in native_app_glue
+    - interface für den ui thread handler (ui reflection)		
+   
