@@ -1,4 +1,5 @@
 ((license "BSD")
  (category os)
+ (depends foreigners)
  (author "bevuta IT GmbH (Patrick Brauer)")
  (synopsis "Android Logging Interface"))
