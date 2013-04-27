@@ -5,7 +5,7 @@
 (module android-log
 *
 (import chicken scheme foreign)
-(use foreigners srfi-13 ports extras)
+(use foreigners srfi-13 ports extras posix srfi-18)
 
 (define-foreign-enum-type (log-priority int)
   (priority->int int->priority)
@@ -19,28 +19,79 @@
   ((fatal   priority/fatal)   ANDROID_LOG_FATAL)
   ((silent  priority/silent)  ANDROID_LOG_SILENT))
 
+(define app-name "NativeChicken")
+
 (define log-write
   (foreign-lambda void __android_log_print int c-string c-string))
 
 
+(define (log-thread-exit-handler mutex condition port %exit)
+  (lambda exit-code
+    (mutex-lock! mutex)
+    (mutex-unlock! mutex condition)
+
+    (flush-output port)
+    (close-output-port port)
+    (apply %exit exit-code)))
+
+
+(define (redirect-output-fileno fileno port)
+  (let ((mutex  (make-mutex))
+	(condition (make-condition-variable))
+	(ready! (make-condition-variable)))
+
+    (exit-handler          (log-thread-exit-handler mutex condition port (exit-handler)))
+    (implicit-exit-handler (log-thread-exit-handler mutex condition port (exit-handler)))
+
+    (mutex-lock! mutex)
+    (thread-start!
+     (make-thread
+      (lambda ()
+	(let-values (((in out) (create-pipe)))
+
+	  (duplicate-fileno out fileno)
+	  (current-output-port port)
+
+	  (condition-variable-signal! ready!)
+	  (let loop ()
+	    (thread-wait-for-i/o! in)
+	    (mutex-lock! mutex)
+	    (let get-chars ()
+	      (let* ((foo (file-read in 64))
+		     (data (car foo))
+		     (length (cadr foo)))
+		(print* (substring data 0 length))
+		(if (or (> 64 length) (= length 0)) 
+		    (condition-variable-signal! condition)
+		    (get-chars))))
+	    (mutex-unlock! mutex condition)
+	    (loop))))))
+    (mutex-unlock! mutex ready!)))
+
+#;
 (define (make-logcat-port tag log-level)
   (make-output-port
    (let ((string-buffer ""))
      (lambda (msg)
-       (if (string-suffix? "\n" msg)
-	   (begin 
-	     (log-write log-level tag (string-append string-buffer msg))
-	     (set! string-buffer ""))
-	   (set! string-buffer (string-append string-buffer msg)))))
+       (let loop ((message msg))
+	 (let ((nl-idx (string-index message #\n)))
+	   (if nl-idx
+	       (begin
+		 (log-write app-name (string-append string-buffer (substring message 0 nl-idx)))
+		 (loop (substring message  nl-idx (length message))))
+	       (set! string-buffer (string-append string-buffer message)))))))
    void))
 
-(define (make-logcat-output-port tag)
-  (make-logcat-port tag priority/info))
-(define (make-logcat-error-port tag)
-  (make-logcat-port tag priority/error))
+(define (make-logcat-port tag log-level)
+  (let ((buffer ""))
+    (make-output-port
+     (lambda (msg)
+       (set! buffer (string-append buffer msg )))
+     (lambda ()
+       (log-write log-level (format "~A\n" buffer))))))
 
-(define app-name "NativeChicken")
-(current-output-port (make-logcat-output-port app-name))
-(current-error-port (make-logcat-error-port app-name))
+
+(redirect-output-fileno fileno/stdout (make-logcat-port app-name priority/info))
+(redirect-output-fileno fileno/stderr (make-logcat-port app-name priority/error))
 
 )
