@@ -2,4 +2,5 @@
  (category os)
  (depends foreigners)
  (author "bevuta IT GmbH (Patrick Brauer)")
- (synopsis "Android Logging Interface"))
+ (synopsis "Android Logging Interface")
+ (depends foreigners))
