@@ -84,14 +84,11 @@
 
 (use udp)
 (define remote-logger (udp-open-socket))
-(udp-connect! remote-logger "10.10.10.40" 7890)
 
-(define (make-logcat-port port)
-  (make-output-port (cut udp-send remote-logger <>) void))
+(udp-set-multicast-interface remote-logger "10.10.10.179")
+(udp-connect! remote-logger "225.0.0.231" 7890)
 
-(current-output-port (make-logcat-port 7890))
-(current-error-port  (make-logcat-port 7891))
-
-(redirect-output-fileno fileno/stderr (make-logcat-port 7892))
+(duplicate-fileno (udp-socket-fd remote-logger) fileno/stderr)
+(duplicate-fileno (udp-socket-fd remote-logger) fileno/stdout)
 
 )
