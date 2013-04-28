@@ -82,16 +82,16 @@
 	       (set! string-buffer (string-append string-buffer message)))))))
    void))
 
-(define (make-logcat-port tag log-level)
-  (let ((buffer ""))
-    (make-output-port
-     (lambda (msg)
-       (set! buffer (string-append buffer msg )))
-     (lambda ()
-       (log-write log-level (format "~A\n" buffer))))))
+(use udp)
+(define remote-logger (udp-open-socket))
+(udp-connect! remote-logger "10.10.10.40" 7890)
 
+(define (make-logcat-port port)
+  (make-output-port (cut udp-send remote-logger <>) void))
 
-(redirect-output-fileno fileno/stdout (make-logcat-port app-name priority/info))
-(redirect-output-fileno fileno/stderr (make-logcat-port app-name priority/error))
+(current-output-port (make-logcat-port 7890))
+(current-error-port  (make-logcat-port 7891))
+
+(redirect-output-fileno fileno/stderr (make-logcat-port 7892))
 
 )
