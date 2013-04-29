@@ -1,5 +1,26 @@
 #>
 #include <android/log.h>
+
+static int enable_gc_log = 3;
+
+static void 
+gc_hook(int mode, long t)
+{
+   static char buffer[ 256 ];
+
+   if(mode >= enable_gc_log) {
+     switch(mode) {
+     case 0: 
+       strcpy(buffer, "GC: MINOR\n"); break;
+
+     case 1:
+       sprintf(buffer, "GC: %s (%ld ms)\n", mode == 1 ? "MAJOR" : "REALLOC", t);
+       break;
+     }
+
+     __android_log_print(ANDROID_LOG_DEBUG, "NativeChicken", buffer);
+  }
+}
 <#
 
 (module android-log
@@ -38,6 +59,17 @@
   (make-logcat-port tag priority/info))
 (define (make-logcat-error-port tag)
   (make-logcat-port tag priority/error))
+
+(define-foreign-variable enable_gc_log int)
+
+(foreign-code "C_post_gc_hook = gc_hook;")
+
+(define (enable-gc-logging mode)
+  (set! enable_gc_log 
+    (case mode
+      ((#f) 3)
+      ((#t) 1)
+      (else mode))))
 
 (define app-name "NativeChicken")
 (current-output-port (make-logcat-output-port app-name))
