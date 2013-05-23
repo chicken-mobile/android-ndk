@@ -27,7 +27,7 @@ gc_hook(int mode, long t)
 *
 (import chicken scheme foreign)
 (import foreigners)
-(use srfi-13 ports extras)
+(use srfi-13 ports extras data-structures)
 
 (define-foreign-enum-type (log-priority int)
   (priority->int int->priority)
@@ -45,21 +45,23 @@ gc_hook(int mode, long t)
   (foreign-lambda void __android_log_print int c-string c-string))
 
 
-(define (make-logcat-port tag log-level)
+(define (make-logcat-port tag log-level prefix suffix)
   (make-output-port
    (let ((string-buffer ""))
      (lambda (msg)
        (if (string-suffix? "\n" msg)
 	   (begin 
-	     (log-write log-level tag (string-append string-buffer msg))
+	     (for-each
+	      (lambda (ln) (log-write log-level tag (string-append prefix ln suffix "\n")))
+	      (string-split (string-append string-buffer msg) "\n"))
 	     (set! string-buffer ""))
 	   (set! string-buffer (string-append string-buffer msg)))))
    void))
 
-(define (make-logcat-output-port tag)
-  (make-logcat-port tag priority/info))
-(define (make-logcat-error-port tag)
-  (make-logcat-port tag priority/error))
+(define (make-logcat-output-port tag #!optional (prefix "") (suffix ""))
+  (make-logcat-port tag priority/info prefix suffix))
+(define (make-logcat-error-port tag #!optional (prefix "") (suffix ""))
+  (make-logcat-port tag priority/error prefix suffix))
 
 (define-foreign-variable enable_gc_log int)
 
@@ -73,7 +75,7 @@ gc_hook(int mode, long t)
       (else mode))))
 
 (define app-name "NativeChicken")
-(current-output-port (make-logcat-output-port app-name))
-(current-error-port (make-logcat-error-port app-name))
+(current-output-port (make-logcat-output-port app-name "\x1b[0;44m" "\x1b[0m"))
+(current-error-port (make-logcat-error-port app-name "\x1b[0;41m" "\x1b[0m"))
 
 )
