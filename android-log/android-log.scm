@@ -26,7 +26,8 @@ gc_hook(int mode, long t)
 (module android-log
 *
 (import chicken scheme foreign)
-(use foreigners srfi-13 ports extras)
+(import foreigners)
+(use srfi-13 ports extras)
 
 (define-foreign-enum-type (log-priority int)
   (priority->int int->priority)
