@@ -1,4 +1,9 @@
-(if (host-extension)
+(define for-host
+  (if (feature? 'cross-chicken)
+      (host-extension)
+      #t))
+
+(if for-host
     (begin
       (compile -O3 -d1 -t android-log.scm -J)
       (compile -O3 -d1 -s android-log.import.scm))
@@ -7,7 +12,7 @@
       (compile -O3 -d1 -s -llog android-log.import.scm)))
 
 (install-extension 'android-log
-  (if (host-extension)
+  (if for-host
       '("android-log.import.so")
       '("android-log.so" "android-log.import.so"))
   '((version "0.1")))
